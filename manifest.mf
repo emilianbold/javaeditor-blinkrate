@@ -1,0 +1,6 @@
+Manifest-Version: 1.0
+OpenIDE-Module: ro.emilianbold.javaeditor.blinkrate
+OpenIDE-Module-Layer: ro/emilianbold/javaeditor/blinkrate/layer.xml
+OpenIDE-Module-Localizing-Bundle: ro/emilianbold/javaeditor/blinkrate/Bundle.properties
+OpenIDE-Module-Specification-Version: 1.0
+
