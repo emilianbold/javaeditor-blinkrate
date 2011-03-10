@@ -1,7 +1,14 @@
 package ro.emilianbold.javaeditor.blinkrate.option;
 
+import javax.swing.JTextField;
+import javax.swing.SpinnerNumberModel;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
+import javax.swing.text.AbstractDocument;
+import javax.swing.text.AttributeSet;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.DocumentFilter;
+import javax.swing.text.DocumentFilter.FilterBypass;
 import ro.emilianbold.javaeditor.blinkrate.BlinkUtil;
 
 final class BlinkratePanel extends javax.swing.JPanel {
@@ -11,11 +18,21 @@ final class BlinkratePanel extends javax.swing.JPanel {
     BlinkratePanel(BlinkrateOptionsPanelController controller) {
         this.controller = controller;
         initComponents();
+
+        // only positive values, and step of 50 milli-sec
+        SpinnerNumberModel m = (SpinnerNumberModel)spinner.getModel();
+        m.setMinimum(Integer.valueOf(0));
+        m.setStepSize(Integer.valueOf(50));
+
+        // This editor rejects non-digit characters
+        // and persists itself to the model as valid characters are input.
+        spinner.setEditor(new IntegerEditor());
+
         spinner.addChangeListener(new ChangeListener() {
-                    public void stateChanged(ChangeEvent arg0) {
-                        BlinkratePanel.this.controller.changed();
-                    }
-                });
+            public void stateChanged(ChangeEvent arg0) {
+                BlinkratePanel.this.controller.changed();
+            }
+        });
     }
 
     /** This method is called from within the constructor to
@@ -65,6 +82,7 @@ final class BlinkratePanel extends javax.swing.JPanel {
     }// </editor-fold>//GEN-END:initComponents
 
     void load() {
+        ((JTextField)spinner.getEditor()).setText("0");
         spinner.setValue(BlinkUtil.getBlink());
     }
 
@@ -74,6 +92,104 @@ final class BlinkratePanel extends javax.swing.JPanel {
 
     boolean valid() {
         return ((Integer) spinner.getValue() >= 0);
+    }
+
+    private class IntegerEditor extends JTextField {
+
+        @SuppressWarnings({"OverridableMethodCallInConstructor",
+                           "LeakingThisInConstructor"})
+        public IntegerEditor() {
+            setHorizontalAlignment(JTextField.RIGHT);
+            updateText();
+
+            String toolTipText = spinner.getToolTipText();
+            if (toolTipText != null) {
+                //JSpinner has tool tip text.  Use it.
+                if (!toolTipText.equals(getToolTipText())) {
+                    setToolTipText(toolTipText);
+                }
+            }
+
+            spinner.addChangeListener(new ChangeListener() {
+                public void stateChanged(ChangeEvent e)
+                {
+                    updateText();
+                }
+            });
+
+            // Only 0-9 allowed in string
+            ((AbstractDocument)getDocument())
+                    .setDocumentFilter(new DocumentFilter() {
+
+                private boolean digitsOnly(String s) {
+                    for(int i = 0; i < s.length(); i++) {
+                        char c = s.charAt(i);
+                        if(c < '0' || c > '9')
+                            return false;
+                    }
+                    return true;
+                }
+
+                @Override
+                public void insertString(FilterBypass fb, int offset,
+                                         String string, AttributeSet attr)
+                        throws BadLocationException
+                {
+                    if(digitsOnly(string)) {
+                        fb.insertString(offset, string, attr);
+                        updateModel();
+                    }
+                }
+
+                @Override
+                public void replace(FilterBypass fb, int offset, int length,
+                                    String text, AttributeSet attrs)
+                        throws BadLocationException
+                {
+                    if(digitsOnly(text)) {
+                        fb.replace(offset, length, text, attrs);
+                        updateModel();
+                    }
+                }
+
+                @Override
+                public void remove(FilterBypass fb, int offset, int length)
+                        throws BadLocationException
+                {
+                    fb.remove(offset, length);
+                    updateModel();
+                }
+            });
+        }
+
+        private int getValue() {
+            String s = getText();
+            int n = -1;
+            if(!s.isEmpty()) {
+                try {
+                    n = Integer.parseInt(s);
+                } catch(NumberFormatException ex) {
+                }
+            } else {
+                n = 0;
+            }
+            return n;
+        }
+
+        private void updateModel() {
+            int n = getValue();
+            if(n >= 0) {
+                if(n != (Integer)spinner.getValue())
+                    spinner.setValue(n);
+            } else
+                updateText();
+        }
+
+        private void updateText() {
+            int n = (Integer)spinner.getValue();
+            if(n != getValue())
+                setText("" + n);
+        }
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables

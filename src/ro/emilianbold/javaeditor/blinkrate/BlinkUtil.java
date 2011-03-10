@@ -4,11 +4,10 @@
  */
 package ro.emilianbold.javaeditor.blinkrate;
 
-import javax.swing.text.EditorKit;
+import java.util.prefs.Preferences;
 import org.netbeans.api.editor.mimelookup.MimeLookup;
 import org.netbeans.api.editor.mimelookup.MimePath;
-import org.netbeans.editor.Settings;
-import org.netbeans.editor.SettingsNames;
+import org.netbeans.api.editor.settings.SimpleValueNames;
 
 /**
  *
@@ -16,15 +15,21 @@ import org.netbeans.editor.SettingsNames;
  */
 public class BlinkUtil {
 
+    private static Preferences prefs() {
+        return MimeLookup.getLookup(MimePath.get("text/x-java"))
+                .lookup(Preferences.class);
+    }
     public static void setBlink(int blinkMs) {
         if (blinkMs >= 0) {
-            Settings.setValue(MimeLookup.getLookup(MimePath.get("text/x-java")).lookup(EditorKit.class).getClass(),
-                    SettingsNames.CARET_BLINK_RATE,
-                    blinkMs);
+            prefs().putInt(SimpleValueNames.CARET_BLINK_RATE, blinkMs);
         }
     }
     public static int getBlink() {
-            return (Integer)Settings.getValue(MimeLookup.getLookup(MimePath.get("text/x-java")).lookup(EditorKit.class).getClass(),
-                    SettingsNames.CARET_BLINK_RATE);
+        int rv = prefs().getInt(SimpleValueNames.CARET_BLINK_RATE, -1);
+        return rv >= 0 ? rv : 300; // from editor.lib2.EditorPreferencesDefaults
+    }
+
+    private BlinkUtil()
+    {
     }
 }
